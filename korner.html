@@ -1,80 +1,99 @@
-<section class="hero">
-  <img src="assets/images/kkorner-banner.png" alt="Kristeanna's Korner Banner" class="kk-banner">
-  
-  <div class="social-icons">
-    <a href="https://www.youtube.com/@kristeannaskorner" target="_blank">
-      <img src="assets/images/youtube-icon.png" alt="YouTube">
-    </a>
-    <a href="https://www.instagram.com/kristeannaskorner" target="_blank">
-      <img src="assets/images/instagram-icon.png" alt="Instagram">
-    </a>
-    <a href="https://www.tiktok.com/@kristeannaskorner" target="_blank">
-      <img src="assets/images/tiktok-icon.png" alt="TikTok">
-    </a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kristeanna’s Korner</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Playfair Display', serif;
+      background-color: #fff8fb;
+      color: #2e2e2e;
+    }
+
+    .hero {
+      position: relative;
+      width: 100%;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fbeeff;
+      padding-top: 20px;
+      padding-bottom: 20px;
+    }
+
+    .kk-banner {
+      width: 100%;
+      max-width: 1200px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .social-icons {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .social-icons a {
+      margin: 0 10px;
+      display: inline-block;
+    }
+
+    .social-icons img {
+      width: 40px;
+      height: 40px;
+      transition: transform 0.3s ease;
+    }
+
+    .social-icons img:hover {
+      transform: scale(1.15);
+    }
+
+    .video-wrapper {
+      margin-top: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .video-wrapper iframe {
+      width: 90%;
+      max-width: 800px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+
+<body>
+  <section class="hero">
+    <img src="assets/images/kkorner-banner.png" alt="Kristeanna's Korner Banner" class="kk-banner">
+
+    <div class="social-icons">
+      <a href="https://www.youtube.com/@kristeannaskorner" target="_blank">
+        <img src="assets/images/youtube-icon.png" alt="YouTube">
+      </a>
+      <a href="https://www.instagram.com/kristeannaskorner" target="_blank">
+        <img src="assets/images/instagram-icon.png" alt="Instagram">
+      </a>
+      <a href="https://www.tiktok.com/@kristeannaskorner" target="_blank">
+        <img src="assets/images/tiktok-icon.png" alt="TikTok">
+      </a>
+    </div>
+  </section>
+
+  <div class="video-wrapper">
+    <iframe 
+      src="https://www.youtube.com/embed?listType=playlist&list=UUY_YA13u-2vqkOqZlVPP8RA" 
+      title="Latest Video from Kristeanna's Korner" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+      allowfullscreen>
+    </iframe>
   </div>
-</section>
-
-<style>
-  .hero {
-    position: relative;
-    width: 100%;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: #fbeeff;
-    padding-top: 20px;
-  }
-
-  .kk-banner {
-    width: 100%;
-    max-width: 1200px;
-    height: auto;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  .social-icons {
-    text-align: center;
-    margin-top: 20px;
-  }
-
-  .social-icons a {
-    margin: 0 10px;
-    display: inline-block;
-  }
-
-  .social-icons img {
-    width: 40px;
-    height: 40px;
-    transition: transform 0.3s ease;
-  }
-
-  .social-icons img:hover {
-    transform: scale(1.15);
-  }
-</style>
-.video-wrapper {
-  margin-top: 30px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.video-wrapper iframe {
-  width: 90%;
-  max-width: 800px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-<div class="video-wrapper">
-  <iframe 
-    width="560" 
-    height="315" 
-    src="https://www.youtube.com/embed/YOUR_VIDEO_ID" 
-    title="YouTube video player" 
-    frameborder="0" 
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-    allowfullscreen>
-  </iframe>
-</div>
+</body>
+</html>
