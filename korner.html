@@ -1,13 +1,27 @@
 <section class="hero">
   <img src="assets/images/kkorner-banner.png" alt="Kristeanna's Korner Banner" class="kk-banner">
+  
+  <div class="social-icons">
+    <a href="https://www.youtube.com/@kristeannaskorner" target="_blank">
+      <img src="assets/images/youtube-icon.png" alt="YouTube">
+    </a>
+    <a href="https://www.instagram.com/kristeannaskorner" target="_blank">
+      <img src="assets/images/instagram-icon.png" alt="Instagram">
+    </a>
+    <a href="https://www.tiktok.com/@kristeannaskorner" target="_blank">
+      <img src="assets/images/tiktok-icon.png" alt="TikTok">
+    </a>
+  </div>
 </section>
+
 <style>
   .hero {
     position: relative;
     width: 100%;
     height: auto;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     background: #fbeeff;
     padding-top: 20px;
   }
@@ -18,5 +32,25 @@
     height: auto;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .social-icons {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .social-icons a {
+    margin: 0 10px;
+    display: inline-block;
+  }
+
+  .social-icons img {
+    width: 40px;
+    height: 40px;
+    transition: transform 0.3s ease;
+  }
+
+  .social-icons img:hover {
+    transform: scale(1.15);
   }
 </style>
