@@ -1,3 +1,9 @@
-/Kwritings/kris-ar/         ← Kris A.R.'s page
-/Kwritings/kr-rev/          ← K.R. Rev's page
-/Kwritings/index.html       ← Writing hub
+Kwritings/
+│
+├── index.html          ← Your Writing Chamber hub (already done)
+│
+├── kris-ar/
+│   └── index.html       ← Kris A.R. writing page
+│
+└── kr-rev/
+    └── index.html       ← K.R. Rev writing page
