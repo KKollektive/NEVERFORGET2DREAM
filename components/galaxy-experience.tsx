@@ -23,31 +23,38 @@ function OrbitClock({ orbitTime, paused }: { orbitTime: MutableRefObject<number>
 }
 
 const planetArtwork: Record<string, { src: string; crop: readonly [number, number, number, number] }> = {
-  fashion: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224031_Gallery-unQnLVZQuEK28YiBvCyy1oQoBg2VUf.jpg", crop: [0.02, 0.02, 0.96, 0.79] },
-  media: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224113_Gallery-8PdqEEw28UffN1eCIyzoA1sKdd9cfw.jpg", crop: [0.025, 0.02, 0.95, 0.83] },
+  fashion: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224031_Gallery-unQnLVZQuEK28YiBvCyy1oQoBg2VUf.jpg", crop: [0.02, 0.02, 0.96, 0.75] },
+  media: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224113_Gallery-8PdqEEw28UffN1eCIyzoA1sKdd9cfw.jpg", crop: [0.025, 0.02, 0.95, 0.71] },
   technology: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224143_Gallery-Q5VgLwHJkQF2f2ho1PNuD6GFvYhRLg.jpg", crop: [0.02, 0.14, 0.96, 0.72] },
-  wellness: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224248_Gallery-ucbzUtzPyw2h0SM96eJIWRxT2qHGMc.jpg", crop: [0.06, 0.14, 0.88, 0.7] },
+  wellness: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224248_Gallery-ucbzUtzPyw2h0SM96eJIWRxT2qHGMc.jpg", crop: [0.06, 0.14, 0.88, 0.66] },
   hospitality: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224019_Gallery-UFZfcNguyHNfVrhlnMGtK0KrgM8KXR.jpg", crop: [0.035, 0.07, 0.93, 0.79] },
-  music: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224058_Gallery-CgutCRvVSuJf7RnpOEsJrgToOgBb86.jpg", crop: [0.025, 0.02, 0.95, 0.71] },
+  music: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224058_Gallery-CgutCRvVSuJf7RnpOEsJrgToOgBb86.jpg", crop: [0.025, 0.02, 0.95, 0.68] },
   literature: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224129_Gallery-nbmwriDgIoRluzZOnAllQQfPH7JX4j.jpg", crop: [0.035, 0.025, 0.93, 0.75] },
-  community: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224233_Gallery-8iqpXg0lrhTMh5xFi18VFVDALpTznA.jpg", crop: [0.03, 0.05, 0.94, 0.68] },
+  community: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224233_Gallery-8iqpXg0lrhTMh5xFi18VFVDALpTznA.jpg", crop: [0.03, 0.05, 0.94, 0.65] },
 }
 const artworkVertexShader = `
-varying vec2 vUv;
+varying vec3 vPlanetPosition;
 void main() {
-  vUv = uv;
+  vPlanetPosition = position;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`
 const artworkFragmentShader = `
 uniform sampler2D uMap;
 uniform vec3 uTint;
-varying vec2 vUv;
+uniform float uRadius;
+varying vec3 vPlanetPosition;
 void main() {
-  vec3 artwork = texture2D(uMap, vUv).rgb;
-  float radius = length((vUv - 0.5) * 2.0);
-  float edge = 1.0 - smoothstep(0.91, 1.0, radius);
-  vec3 color = mix(artwork, uTint, 0.28);
-  gl_FragColor = vec4(color, edge * 0.88);
+  if (vPlanetPosition.z <= 0.0) discard;
+  vec2 imageUv = vPlanetPosition.xy / (uRadius * 2.0) + 0.5;
+  float radius = length((imageUv - 0.5) * 2.0);
+  if (radius > 1.0) discard;
+  vec3 artwork = texture2D(uMap, imageUv).rgb;
+  float luminance = dot(artwork, vec3(0.2126, 0.7152, 0.0722));
+  float artworkMask = smoothstep(0.018, 0.11, luminance);
+  float edgeMask = 1.0 - smoothstep(0.94, 1.0, radius);
+  float opacity = artworkMask * edgeMask * 0.84;
+  vec3 color = mix(uTint, artwork, 0.86);
+  gl_FragColor = vec4(color, opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`
@@ -67,13 +74,12 @@ function PlanetArtwork({ venture }: { venture: Venture }) {
     return texture
   }, [source, cropX, cropY, cropWidth, cropHeight])
   useEffect(() => () => cropped.dispose(), [cropped])
-  const uniforms = useMemo(() => ({ uMap: { value: cropped }, uTint: { value: new THREE.Color(venture.color) } }), [cropped, venture.color])
-  return <Billboard>
-    <mesh position={[0, 0, venture.size * 0.92]} renderOrder={1} raycast={() => {}}>
-      <planeGeometry args={[venture.size * 1.78, venture.size * 1.56]} />
-      <shaderMaterial uniforms={uniforms} vertexShader={artworkVertexShader} fragmentShader={artworkFragmentShader} transparent depthWrite={false} />
-    </mesh>
-  </Billboard>
+  const radius = venture.size * 1.008
+  const uniforms = useMemo(() => ({ uMap: { value: cropped }, uTint: { value: new THREE.Color(venture.color) }, uRadius: { value: radius } }), [cropped, venture.color, radius])
+  return <mesh renderOrder={1} raycast={() => {}}>
+    <sphereGeometry args={[radius, 48, 48]} />
+    <shaderMaterial uniforms={uniforms} vertexShader={artworkVertexShader} fragmentShader={artworkFragmentShader} transparent depthWrite={false} />
+  </mesh>
 }
 
 function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture; onSelect: (venture: Venture) => void; selectedId?: string; orbitTime: MutableRefObject<number> }) {
@@ -96,8 +102,8 @@ function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture
       <mesh ref={mesh} onClick={(event) => { event.stopPropagation(); onSelect(venture) }} onPointerOver={(event) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = "pointer" }} onPointerOut={() => { setHovered(false); document.body.style.cursor = "auto" }}>
         <sphereGeometry args={[venture.size, 48, 48]} />
         <meshStandardMaterial color={venture.color} emissive={venture.color} emissiveIntensity={hovered || selected ? 0.95 : 0.32} roughness={0.3} metalness={0.24} />
+        <PlanetArtwork venture={venture} />
       </mesh>
-      <PlanetArtwork venture={venture} />
       <mesh scale={1.17}>
         <sphereGeometry args={[venture.size, 32, 32]} />
         <meshBasicMaterial color={venture.color} transparent opacity={0.075} side={THREE.BackSide} />
