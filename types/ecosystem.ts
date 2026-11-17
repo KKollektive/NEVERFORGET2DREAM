@@ -1,0 +1,21 @@
+export type VisibilityStatus = "live" | "new" | "coming-soon" | "hidden"
+export type EcosystemLink = { label: string; href: string; visible?: boolean }
+export type EcosystemProject = { title: string; type: string; description: string; href: string; visible?: boolean }
+export type RigSocket = "torso" | "head" | "accessory" | "full-set"
+export type RPGItemType = "armor" | "elixir" | "lore-tome" | "dream-credits"
+export type RPGBoost = { healingLevel?: number; defenseLevel?: number; energyBoost?: number; auraLevel?: number; loreXp?: number; bonusDreamCredits?: number }
+export type StoreProduct = { id: string; name: string; category: string; price: string; details: string; href: string; visible?: boolean; status?: VisibilityStatus; rpg?: { itemType: RPGItemType; boosts: RPGBoost; label: string }; sizes?: string[]; wearableModelUrl?: string; rigSocket?: RigSocket }
+export type QuestConfig = { id: string; title: string; description: string; reward?: RPGBoost }
+export type UnlockRequirements = { minHealingLevel?: number; requiredItemIds?: string[] }
+export type EcosystemContinent = { id: string; title: string; kind: "product-line" | "album" | "story-world" | "boutique" | "studio"; description: string; href: string; status: VisibilityStatus; products?: StoreProduct[]; questTriggers?: QuestConfig[]; unlockRequirements?: UnlockRequirements }
+export type EcosystemMoon = { id: string; name: string; status: VisibilityStatus; description?: string; href?: string; portalIds?: string[]; continents?: EcosystemContinent[]; links?: EcosystemLink[]; projects?: EcosystemProject[] }
+export type PortalConfig = { id: string; title: string; fromMoonId: string; toPlanetId: string; toMoonId: string; description: string }
+export type AlbumConfig = { id: string; title: string; status: VisibilityStatus; description?: string; tracks?: string[]; merch?: StoreProduct[] }
+export type Planet = { id: string; order: number; title: string; shortTitle: string; category: string; tagline: string; story: string; color: string; radius: number; size: number; speed: number; phase: number; cta: string; href: string; links: EcosystemLink[]; projects: EcosystemProject[]; products?: StoreProduct[]; moons: EcosystemMoon[]; continents?: EcosystemContinent[]; portals?: PortalConfig[]; albums?: AlbumConfig[]; questTriggers?: QuestConfig[]; unlockRequirements?: UnlockRequirements; visible?: boolean }
+export type Venture = Planet
+export type AvatarConfig = { silhouette: "wanderer" | "oracle" | "sentinel"; hairstyle: "halo" | "curls" | "crown"; outfitColor: string; auraColor: string }
+export type DreamCreditPack = { id: string; name: string; credits: number; price: string; bonusCredits?: number }
+export type RealWorldOrder = { id: string; userId?: string; items: Array<{ productId: string; quantity: number }> }
+export type InventorySyncResult = { status: "pending" | "synced"; orderId: string }
+export type CommerceInventorySync = (order: RealWorldOrder) => Promise<InventorySyncResult>
+export type FounderWorkspace = { incubator: Array<{ id: string; name: string; category: string; description: string }>; privateTiles: Array<{ name: string; href: string }> }
