@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Billboard, Html, OrbitControls, Stars, useTexture } from "@react-three/drei"
-import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject, type ReactNode } from "react"
+import { Component, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type MutableRefObject, type ReactNode } from "react"
 import * as THREE from "three"
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, Compass, Move3D, Sparkles, X } from "lucide-react"
 import type { Venture } from "../data/ecosystem"
@@ -22,7 +22,16 @@ function OrbitClock({ orbitTime, paused }: { orbitTime: MutableRefObject<number>
   return null
 }
 
-const PLANET_ARTWORK_URL = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261115_111710_ChatGPT-Qnm8nXYr5wK8AZZm9C73UEGhcXQfU0.jpg"
+const planetArtwork: Record<string, { src: string; crop: readonly [number, number, number, number] }> = {
+  fashion: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224031_Gallery-unQnLVZQuEK28YiBvCyy1oQoBg2VUf.jpg", crop: [0.02, 0.02, 0.96, 0.79] },
+  media: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224113_Gallery-8PdqEEw28UffN1eCIyzoA1sKdd9cfw.jpg", crop: [0.025, 0.02, 0.95, 0.83] },
+  technology: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224143_Gallery-Q5VgLwHJkQF2f2ho1PNuD6GFvYhRLg.jpg", crop: [0.02, 0.14, 0.96, 0.72] },
+  wellness: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224248_Gallery-ucbzUtzPyw2h0SM96eJIWRxT2qHGMc.jpg", crop: [0.06, 0.14, 0.88, 0.7] },
+  hospitality: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224019_Gallery-UFZfcNguyHNfVrhlnMGtK0KrgM8KXR.jpg", crop: [0.035, 0.07, 0.93, 0.79] },
+  music: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224058_Gallery-CgutCRvVSuJf7RnpOEsJrgToOgBb86.jpg", crop: [0.025, 0.02, 0.95, 0.71] },
+  literature: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224129_Gallery-nbmwriDgIoRluzZOnAllQQfPH7JX4j.jpg", crop: [0.035, 0.025, 0.93, 0.75] },
+  community: { src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Screenshot_20261116_224233_Gallery-8iqpXg0lrhTMh5xFi18VFVDALpTznA.jpg", crop: [0.03, 0.05, 0.94, 0.68] },
+}
 const artworkVertexShader = `
 varying vec2 vUv;
 void main() {
@@ -31,38 +40,37 @@ void main() {
 }`
 const artworkFragmentShader = `
 uniform sampler2D uMap;
+uniform vec3 uTint;
 varying vec2 vUv;
 void main() {
-  vec4 pixel = texture2D(uMap, vUv);
-  vec3 background = texture2D(uMap, vec2(0.01, 0.01)).rgb;
-  float separation = distance(pixel.rgb, background);
-  float alpha = smoothstep(0.028, 0.15, separation);
-  float edge = smoothstep(0.0, 0.035, min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)));
-  gl_FragColor = vec4(pixel.rgb, alpha * edge * 0.98);
+  vec3 artwork = texture2D(uMap, vUv).rgb;
+  float radius = length((vUv - 0.5) * 2.0);
+  float edge = 1.0 - smoothstep(0.91, 1.0, radius);
+  vec3 color = mix(artwork, uTint, 0.28);
+  gl_FragColor = vec4(color, edge * 0.88);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
 }`
 
 function PlanetArtwork({ venture }: { venture: Venture }) {
-  const source = useTexture(PLANET_ARTWORK_URL)
+  const artwork = planetArtwork[venture.id]
+  const source = useTexture(artwork.src)
+  const [cropX, cropY, cropWidth, cropHeight] = artwork.crop
   const cropped = useMemo(() => {
     const texture = source.clone()
-    const column = (venture.order - 1) % 4
-    const row = Math.floor((venture.order - 1) / 4)
-    const cropHeight = 0.37
     texture.wrapS = THREE.ClampToEdgeWrapping
     texture.wrapT = THREE.ClampToEdgeWrapping
     texture.colorSpace = THREE.SRGBColorSpace
-    texture.repeat.set(0.25, cropHeight)
-    texture.offset.set(column * 0.25, 1 - (row * 0.5 + cropHeight))
+    texture.repeat.set(cropWidth, cropHeight)
+    texture.offset.set(cropX, 1 - cropY - cropHeight)
     texture.needsUpdate = true
     return texture
-  }, [source, venture.order])
+  }, [source, cropX, cropY, cropWidth, cropHeight])
   useEffect(() => () => cropped.dispose(), [cropped])
-  const uniforms = useMemo(() => ({ uMap: { value: cropped } }), [cropped])
+  const uniforms = useMemo(() => ({ uMap: { value: cropped }, uTint: { value: new THREE.Color(venture.color) } }), [cropped, venture.color])
   return <Billboard>
     <mesh position={[0, 0, venture.size * 0.92]} renderOrder={1} raycast={() => {}}>
-      <planeGeometry args={[venture.size * 2.08, venture.size * 1.69]} />
+      <planeGeometry args={[venture.size * 1.78, venture.size * 1.56]} />
       <shaderMaterial uniforms={uniforms} vertexShader={artworkVertexShader} fragmentShader={artworkFragmentShader} transparent depthWrite={false} />
     </mesh>
   </Billboard>
@@ -108,15 +116,50 @@ function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture
   </>
 }
 
+const coreStarVertexShader = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`
+const coreStarFragmentShader = `
+varying vec2 vUv;
+void main() {
+  vec2 point = (vUv - 0.5) * 2.0;
+  float radius = length(point);
+  float horizontalRay = exp(-abs(point.x) * 46.0) * exp(-abs(point.y) * 3.2);
+  float verticalRay = exp(-abs(point.y) * 46.0) * exp(-abs(point.x) * 3.2);
+  float center = exp(-radius * 34.0);
+  float bloom = exp(-radius * 4.6);
+  float light = center + max(horizontalRay, verticalRay) * 0.84 + bloom * 0.2;
+  vec3 color = mix(vec3(0.68, 0.42, 1.0), vec3(1.0, 0.91, 0.78), center);
+  gl_FragColor = vec4(color, clamp(light, 0.0, 1.0));
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`
+
+function CoreStar() {
+  return <Billboard position={[0, 0.2, 0.88]}>
+    <mesh renderOrder={2} raycast={() => {}}>
+      <planeGeometry args={[1.45, 1.45]} />
+      <shaderMaterial vertexShader={coreStarVertexShader} fragmentShader={coreStarFragmentShader} transparent blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+    </mesh>
+  </Billboard>
+}
+
 function Core({ onReset }: { onReset: () => void }) {
   const core = useRef<THREE.Group>(null)
   useFrame(() => { if (core.current) core.current.rotation.y += 0.0016 })
-  return <group ref={core} onClick={onReset}>
-    <mesh><sphereGeometry args={[0.83, 44, 44]} /><meshStandardMaterial color="#f0a5a0" emissive="#e977a1" emissiveIntensity={1.2} metalness={0.25} roughness={0.28} /></mesh>
-    <mesh scale={1.13}><sphereGeometry args={[0.83, 28, 28]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.08} side={THREE.BackSide} /></mesh>
-    <pointLight color="#e57aa9" intensity={5} distance={8} decay={2} />
-    <Html center distanceFactor={8} position={[0, 1.34, 0]} style={{ pointerEvents: "none", whiteSpace: "nowrap" }}><div className="core-label"><span>NEVER FORGET TO DREAM</span><small>INCORPORATED</small></div></Html>
-  </group>
+  return <>
+    <group ref={core} onClick={onReset}>
+      <mesh><sphereGeometry args={[0.83, 44, 44]} /><meshStandardMaterial color="#f0a5a0" emissive="#e977a1" emissiveIntensity={1.2} metalness={0.25} roughness={0.28} /></mesh>
+      <mesh scale={1.13}><sphereGeometry args={[0.83, 28, 28]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.08} side={THREE.BackSide} /></mesh>
+      <mesh scale={1.43} raycast={() => {}}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#9d5cff" transparent opacity={0.11} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
+      <pointLight color="#e57aa9" intensity={5} distance={8} decay={2} />
+    </group>
+    <CoreStar />
+    <Html center distanceFactor={8} position={[0, -0.13, 0.98]} style={{ pointerEvents: "none", whiteSpace: "nowrap" }}><div className="core-label"><span>NEVER FORGET TO DREAM</span><small>INCORPORATED</small></div></Html>
+  </>
 }
 
 function CameraDirector({ selected, orbitTime }: { selected: Venture | null; orbitTime: MutableRefObject<number> }) {
@@ -149,7 +192,15 @@ function GalaxyScene({ ventures, selected, onSelect, onReset, orbitPaused }: { v
   </Canvas>
 }
 
-function VentureDrawer({ venture, index, onClose }: { venture: Venture; index: number; onClose: () => void }) {
+function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Venture; index: number; onClose: () => void; onModeChange: (mode: ViewMode) => void }) {
+  const handleInternalLink = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!href.startsWith("#")) return
+    event.preventDefault()
+    const target = href === "#" || href === "#explore" ? `#${venture.id}` : href
+    onModeChange("standard")
+    window.history.replaceState(null, "", target)
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => document.getElementById(target.slice(1))?.scrollIntoView({ behavior: "smooth", block: "start" })))
+  }
   return <aside className="venture-drawer" key={venture.id} aria-labelledby="venture-title">
     <button className="drawer-close" onClick={onClose} aria-label="Return to Galaxy View"><X size={17} /></button>
     <p className="drawer-kicker"><span style={{ background: venture.color }} /> {venture.category}</p>
@@ -157,8 +208,8 @@ function VentureDrawer({ venture, index, onClose }: { venture: Venture; index: n
     <h2 id="venture-title">{venture.title}</h2><p className="drawer-tagline">{venture.tagline}</p>
     <div className="drawer-rule" /><p className="drawer-description">{venture.story}</p>
     <div className="drawer-projects"><span className="drawer-section-label">BRANDS IN THIS WORLD</span>{venture.moons.filter((moon) => moon.status !== "hidden").map((moon) => <div key={moon.id}><span><b>{moon.name}</b><small>{moon.status.replace("-", " ")}{moon.continents?.length ? ` · ${moon.continents.map((continent) => continent.title).join(", ")}` : ""}</small></span><ArrowUpRight size={14} /></div>)}</div>
-    {venture.products?.some((product) => product.visible !== false) ? <div className="drawer-products"><span className="drawer-section-label">FEATURED IN THE SHOP</span>{venture.products.filter((product) => product.visible !== false).slice(0, 2).map((product) => <div key={product.name}><span>{product.name}<small>{product.category}</small></span><b>{product.price}</b></div>)}</div> : <div className="drawer-links">{venture.links.filter((link) => link.visible !== false).slice(0, 2).map((link) => <a key={link.label} href={link.href} target={link.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">{link.label}<ArrowUpRight size={12} /></a>)}</div>}
-    <a className="launch-button" href={venture.href} target={venture.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer"><span>{venture.cta.toUpperCase()}</span><ArrowUpRight size={16} /></a>
+    {venture.products?.some((product) => product.visible !== false) ? <div className="drawer-products"><span className="drawer-section-label">FEATURED IN THE SHOP</span>{venture.products.filter((product) => product.visible !== false).slice(0, 2).map((product) => <div key={product.name}><span>{product.name}<small>{product.category}</small></span><b>{product.price}</b></div>)}</div> : <div className="drawer-links">{venture.links.filter((link) => link.visible !== false).slice(0, 2).map((link) => <a key={link.label} href={link.href} onClick={(event) => handleInternalLink(event, link.href)} target={link.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer">{link.label}<ArrowUpRight size={12} /></a>)}</div>}
+    <a className="launch-button" href={venture.href} onClick={(event) => handleInternalLink(event, venture.href)} target={venture.href.startsWith("http") ? "_blank" : undefined} rel="noreferrer"><span>{venture.cta.toUpperCase()}</span><ArrowUpRight size={16} /></a>
     <button className="return-button" onClick={onClose}><ArrowDownLeft size={14} /> RETURN TO GALAXY</button>
     <span className="drawer-index">NEVER FORGET TO DREAM INC.</span>
   </aside>
@@ -204,6 +255,6 @@ export function GalaxyExperience({ ventures, onModeChange }: { ventures: Venture
     <div className="scene-caption"><span className="caption-line" /> THE NEVER FORGET UNIVERSE <span className="caption-index">01 — 08</span></div>
     <div className="accessible-jump" aria-label="Choose a world"><button className="orbit-toggle" onClick={() => setOrbitPaused((paused) => !paused)} aria-pressed={orbitPaused}>{orbitPaused ? "RESUME ORBIT" : "PAUSE ORBIT"}</button><span>CHOOSE A WORLD</span>{ventures.map((venture, index) => <button key={venture.id} className={`jump-world${selected?.id === venture.id ? " jump-active" : ""}`} style={{ "--planet-color": venture.color } as CSSProperties} onClick={() => selectVenture(venture)} aria-label={`Explore ${venture.title}`}><i />{String(index + 1).padStart(2, "0")} · {venture.shortTitle}</button>)}</div>
     <div className="footer-note"><span className="live-dot" /> EIGHT WORLDS, ONE DREAM <span className="footer-divider">/</span><a href="/back-office">FOUNDER PORTAL</a></div>
-    {selected && <VentureDrawer venture={selected} index={ventures.findIndex((venture) => venture.id === selected.id)} onClose={resetView} />}
+    {selected && <VentureDrawer venture={selected} index={ventures.findIndex((venture) => venture.id === selected.id)} onClose={resetView} onModeChange={onModeChange} />}
   </main>
 }
