@@ -183,11 +183,11 @@ function Core({ onReset }: { onReset: () => void }) {
   useFrame(() => { if (core.current) core.current.rotation.y += 0.0016 })
   return <>
     <group ref={core} onClick={onReset}>
-      <mesh><sphereGeometry args={[0.72, 64, 64]} /><meshStandardMaterial color="#df839d" emissive="#a83276" emissiveIntensity={0.46} metalness={0.48} roughness={0.42} /></mesh>
-      <mesh scale={1.12}><sphereGeometry args={[0.72, 36, 36]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.07} side={THREE.BackSide} /></mesh>
-      <mesh rotation={[Math.PI / 2.5, 0.18, 0.36]}><torusGeometry args={[1.02, 0.022, 8, 96]} /><meshBasicMaterial color="#f4b18e" transparent opacity={0.72} /></mesh>
-      <mesh rotation={[Math.PI / 2.7, -0.28, -0.12]}><torusGeometry args={[1.22, 0.009, 6, 96]} /><meshBasicMaterial color="#9d73e8" transparent opacity={0.56} /></mesh>
-      <mesh scale={1.43} raycast={() => {}}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#9d5cff" transparent opacity={0.11} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
+      <mesh><sphereGeometry args={[0.83, 64, 64]} /><meshStandardMaterial color="#f0a5a0" emissive="#e977a1" emissiveIntensity={1.2} metalness={0.25} roughness={0.28} /></mesh>
+      <mesh scale={1.13}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.13} side={THREE.BackSide} /></mesh>
+      <mesh rotation={[Math.PI / 2.5, 0.18, 0.36]}><torusGeometry args={[1.08, 0.026, 8, 96]} /><meshBasicMaterial color="#f4b18e" transparent opacity={0.82} /></mesh>
+      <mesh rotation={[Math.PI / 2.7, -0.28, -0.12]}><torusGeometry args={[1.29, 0.012, 6, 96]} /><meshBasicMaterial color="#9d73e8" transparent opacity={0.68} /></mesh>
+      <mesh scale={1.43} raycast={() => {}}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#9d5cff" transparent opacity={0.16} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
       <pointLight color="#e57aa9" intensity={5} distance={8} decay={2} />
     </group>
     <CoreStar />
