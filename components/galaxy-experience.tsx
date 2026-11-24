@@ -38,7 +38,7 @@ type DivisionExperience = { featuredLabel: string; featuredTitle: string; featur
 
 const divisionExperience: Record<string, DivisionExperience> = {
   fashion: { featuredLabel: "FEATURED LOOKBOOK", featuredTitle: "Dusk Theory · The Atelier Edit", featuredCopy: "Silk-magenta silhouettes and healing armor made for the life you are becoming.", previewTitle: "KOUT ATELIER™ lookbook", lore: "A world of expressive design, wearable confidence, and new forms of healing armor.", actionLabel: "Explore Lookbook", actionHref: "#fashion" },
-  media: { featuredLabel: "LATEST EPISODE", featuredTitle: "Kristeanna’s Korner", featuredCopy: "A warm, honest journal of the ideas, rituals, and everyday moments that make a life feel like your own.", previewTitle: "Latest episode preview", lore: "A living constellation of video journals, series, reactions, and community-led storytelling.", actionLabel: "Watch Latest Episode", actionHref: "#media" },
+  media: { featuredLabel: "LATEST EPISODE", featuredTitle: "Kristeanna’s Korner", featuredCopy: "A warm, honest journal of the ideas, rituals, and everyday moments that make a life feel like your own.", previewTitle: "Kristeanna’s Korner on YouTube", lore: "A living constellation of video journals, series, reactions, and community-led storytelling.", actionLabel: "Visit Kristeanna’s Korner on YouTube", actionHref: "https://youtube.com/@kristeannaskorner?si=f9MGnYG-pwsAFl4Y" },
   technology: { featuredLabel: "FEATURED PLATFORM", featuredTitle: "AI Rolodex · Creative Tools", featuredCopy: "A considered guide to the tools helping people make room for more human imagination.", previewTitle: "AI Rolodex preview", lore: "Thoughtful technology and creative platforms built to make the next idea easier to reach.", actionLabel: "Explore AI Rolodex", actionHref: "#technology" },
   wellness: { featuredLabel: "FEATURED RITUAL", featuredTitle: "The Siptionary · A Pause in Bloom", featuredCopy: "A small invitation to slow down, find the words for what you feel, and begin again.", previewTitle: "Wellness experience preview", lore: "Tea, reflection, and practical rituals for personal growth and the next becoming.", actionLabel: "Explore Wellness", actionHref: "#wellness" },
   hospitality: { featuredLabel: "FEATURED DROP", featuredTitle: "That’s The Tea · Sunday in Bloom", featuredCopy: "A softly bright botanical ritual for a little everyday renewal, poured with a touch of luxury.", previewTitle: "Tea and lifestyle preview", lore: "Comforting flavors, thoughtful hospitality, and luxurious rituals for everyday dreaming.", actionLabel: "Discover the Tea Menu", actionHref: "#hospitality" },
@@ -243,6 +243,7 @@ function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Ven
   const liveCount = venture.moons.filter((moon) => moon.status === "live").length
   const upcomingCount = venture.moons.filter((moon) => moon.status === "new" || moon.status === "coming-soon").length
   const collectionCount = (venture.albums?.length ?? 0) + (venture.continents?.length ?? 0)
+  const externalAction = experience.actionHref.startsWith("https://")
   const handleInternalLink = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith("#")) return
     event.preventDefault()
@@ -268,19 +269,27 @@ function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Ven
     </section>
     <section className="drawer-preview" aria-labelledby="preview-heading">
       <div className="drawer-section-heading"><span id="preview-heading">INTERACTIVE PREVIEW</span><span>EMBED READY</span></div>
-      <button className="media-preview" type="button" aria-expanded={previewOpen} onClick={() => setPreviewOpen((open) => !open)}>
-        <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
-        <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>{previewOpen ? "Preview slot ready for the official media embed." : "Tap to open the interactive preview space."}</small></span>
-        <ArrowUpRight size={15} />
-      </button>
+      {venture.id === "media" ? (
+        <a className="media-preview" href={experience.actionHref} target="_blank" rel="noopener noreferrer">
+          <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
+          <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>Watch the latest videos on YouTube.</small></span>
+          <ArrowUpRight size={15} />
+        </a>
+      ) : (
+        <button className="media-preview" type="button" aria-expanded={previewOpen} onClick={() => setPreviewOpen((open) => !open)}>
+          <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
+          <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>{previewOpen ? "Preview slot ready for the official media embed." : "Tap to open the interactive preview space."}</small></span>
+          <ArrowUpRight size={15} />
+        </button>
+      )}
     </section>
     <section className="drawer-lore" aria-labelledby="lore-heading">
       <span className="drawer-section-label" id="lore-heading">QUICK STATS / LORE</span>
       <div className="drawer-stats"><div><b>{String(liveCount).padStart(2, "0")}</b><span>Live moons</span></div><div><b>{String(upcomingCount).padStart(2, "0")}</b><span>In orbit</span></div><div><b>{String(collectionCount).padStart(2, "0")}</b><span>Collections</span></div></div>
       <p>{experience.lore}</p>
     </section>
-    <div className="drawer-projects"><span className="drawer-section-label">BRANDS IN THIS WORLD</span>{venture.moons.filter((moon) => moon.status !== "hidden").slice(0, 4).map((moon) => <div key={moon.id}><span><b>{moon.name}</b><small>{moon.status.replace("-", " ")}{moon.continents?.length ? ` · ${moon.continents.map((continent) => continent.title).join(", ")}` : ""}</small></span><ArrowUpRight size={14} /></div>)}</div>
-    <Link className="launch-button" href={experience.actionHref} onClick={(event) => handleInternalLink(event, experience.actionHref)}><span>{experience.actionLabel.toUpperCase()}</span><ArrowUpRight size={16} /></Link>
+    <div className="drawer-projects"><span className="drawer-section-label">BRANDS IN THIS WORLD</span>{venture.moons.filter((moon) => moon.status !== "hidden").slice(0, 4).map((moon) => <div key={moon.id}><span><b>{moon.name}</b><small>{moon.status.replace("-", " ")}{moon.continents?.length ? ` · ${moon.continents.map((continent) => continent.title).join(", ")}` : ""}</small></span><ArrowUpRight size={14} /></div>)}{venture.links?.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer"><span><b>{link.label}</b><small>Open social channel</small></span><ArrowUpRight size={14} /></a>)}</div>
+    <Link className="launch-button" href={experience.actionHref} target={externalAction ? "_blank" : undefined} rel={externalAction ? "noopener noreferrer" : undefined} onClick={(event) => handleInternalLink(event, experience.actionHref)}><span>{experience.actionLabel.toUpperCase()}</span><ArrowUpRight size={16} /></Link>
     <button className="return-button" onClick={onClose}><ArrowDownLeft size={14} /> RETURN TO GALAXY</button>
     <span className="drawer-index">NEVER FORGET TO DREAM INC.</span>
   </aside>
