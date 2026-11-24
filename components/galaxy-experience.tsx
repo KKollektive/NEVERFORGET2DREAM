@@ -42,7 +42,7 @@ const divisionExperience: Record<string, DivisionExperience> = {
   technology: { featuredLabel: "FEATURED PLATFORM", featuredTitle: "AI Rolodex · Creative Tools", featuredCopy: "A considered guide to the tools helping people make room for more human imagination.", previewTitle: "AI Rolodex preview", lore: "Thoughtful technology and creative platforms built to make the next idea easier to reach.", actionLabel: "Explore AI Rolodex", actionHref: "#technology" },
   wellness: { featuredLabel: "FEATURED RITUAL", featuredTitle: "The Siptionary · A Pause in Bloom", featuredCopy: "A small invitation to slow down, find the words for what you feel, and begin again.", previewTitle: "Wellness experience preview", lore: "Tea, reflection, and practical rituals for personal growth and the next becoming.", actionLabel: "Explore Wellness", actionHref: "#wellness" },
   hospitality: { featuredLabel: "FEATURED DROP", featuredTitle: "That’s The Tea · Sunday in Bloom", featuredCopy: "A softly bright botanical ritual for a little everyday renewal, poured with a touch of luxury.", previewTitle: "Tea and lifestyle preview", lore: "Comforting flavors, thoughtful hospitality, and luxurious rituals for everyday dreaming.", actionLabel: "Discover the Tea Menu", actionHref: "#hospitality" },
-  music: { featuredLabel: "FEATURED RELEASE", featuredTitle: "K. Reverie · Playing in the Flowers", featuredCopy: "Original music and visual poetry for the feelings that stay with you after the last note.", previewTitle: "Listen to a track preview", lore: "A velvet-curtain soundscape for original music, choreography, and performance art.", actionLabel: "Listen to Preview", actionHref: "#music" },
+  music: { featuredLabel: "FEATURED RELEASE", featuredTitle: "K. Reverie · Playing in the Flowers", featuredCopy: "Original music and visual poetry for the feelings that stay with you after the last note.", previewTitle: "K. Reverie on YouTube", lore: "A velvet-curtain soundscape for original music, choreography, and performance art.", actionLabel: "Visit K. Reverie on YouTube", actionHref: "https://youtube.com/@k.reverie?si=6KbvH7RzRULgb1Bh" },
   literature: { featuredLabel: "FEATURED STORY", featuredTitle: "The Writings · HEIRS, Chapter 1", featuredCopy: "Step into the first page of a growing story universe, built to reward every curious reader.", previewTitle: "Read a story preview", lore: "Original novels, poetry, film, and story quests gathered beneath a moonlit citadel.", actionLabel: "Read Chapter 1", actionHref: "#literature" },
   community: { featuredLabel: "FEATURED INITIATIVE", featuredTitle: "Reverie 1 Nation · The First Gathering", featuredCopy: "Creative confidence, mentorship, and possibility grow stronger when more people can dream together.", previewTitle: "Community impact preview", lore: "A tree-of-life world for mentorship, creative development, and community possibility.", actionLabel: "Explore Community Impact", actionHref: "#community" },
 }
@@ -269,10 +269,10 @@ function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Ven
     </section>
     <section className="drawer-preview" aria-labelledby="preview-heading">
       <div className="drawer-section-heading"><span id="preview-heading">INTERACTIVE PREVIEW</span><span>EMBED READY</span></div>
-      {venture.id === "media" ? (
+      {externalAction ? (
         <a className="media-preview" href={experience.actionHref} target="_blank" rel="noopener noreferrer">
           <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
-          <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>Watch the latest videos on YouTube.</small></span>
+          <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>{venture.id === "music" ? "Listen on K. Reverie’s YouTube channel." : "Watch the latest videos on YouTube."}</small></span>
           <ArrowUpRight size={15} />
         </a>
       ) : (
