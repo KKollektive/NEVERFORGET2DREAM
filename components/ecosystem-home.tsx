@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { SiteGuideAssistant } from "./site-guide-assistant"
 import { ecosystem, type Venture } from "../data/ecosystem"
 import { GalaxyExperience } from "./galaxy-experience"
 import { StandardSite } from "./standard-site"
@@ -21,7 +22,8 @@ export function EcosystemHome() {
       }
     } catch { window.localStorage.removeItem(STORAGE_KEY) }
   }, [])
-  if (mode === "galaxy") return <GalaxyExperience ventures={ventures} onModeChange={setMode} />
-  if (mode === "standard") return <StandardSite ventures={ventures} onModeChange={setMode} />
-  return <KVerseExperience ventures={ventures} onModeChange={setMode} />
+  return <>
+    {mode === "galaxy" ? <GalaxyExperience ventures={ventures} onModeChange={setMode} /> : mode === "standard" ? <StandardSite ventures={ventures} onModeChange={setMode} /> : <KVerseExperience ventures={ventures} onModeChange={setMode} />}
+    <SiteGuideAssistant />
+  </>
 }

@@ -51,8 +51,10 @@ type AmbientSynth = { context: AudioContext; master: GainNode; oscillators: Osci
 
 const artworkVertexShader = `
 varying vec3 vPlanetPosition;
+varying vec3 vPlanetNormal;
 void main() {
   vPlanetPosition = position;
+  vPlanetNormal = normalize(normalMatrix * normal);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`
 const artworkFragmentShader = `
@@ -60,6 +62,7 @@ uniform sampler2D uMap;
 uniform vec3 uTint;
 uniform float uRadius;
 varying vec3 vPlanetPosition;
+varying vec3 vPlanetNormal;
 void main() {
   if (vPlanetPosition.z <= 0.0) discard;
   vec2 imageUv = vPlanetPosition.xy / (uRadius * 2.0) + 0.5;
@@ -69,8 +72,13 @@ void main() {
   float luminance = dot(artwork, vec3(0.2126, 0.7152, 0.0722));
   float artworkMask = smoothstep(0.018, 0.11, luminance);
   float edgeMask = 1.0 - smoothstep(0.94, 1.0, radius);
-  float opacity = artworkMask * edgeMask * 0.84;
-  vec3 color = mix(uTint, artwork, 0.86);
+  vec3 normal = normalize(vPlanetNormal);
+  vec3 lightDirection = normalize(vec3(-0.38, 0.52, 0.78));
+  float diffuse = 0.42 + max(dot(normal, lightDirection), 0.0) * 0.7;
+  float rim = pow(1.0 - max(normal.z, 0.0), 2.4);
+  float specular = pow(max(dot(reflect(-lightDirection, normal), vec3(0.0, 0.0, 1.0)), 0.0), 24.0);
+  vec3 color = mix(uTint, artwork, 0.86) * diffuse + uTint * rim * 0.3 + vec3(1.0, 0.82, 0.72) * specular * 0.42;
+  float opacity = artworkMask * edgeMask * 0.96;
   gl_FragColor = vec4(color, opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -99,7 +107,7 @@ function PlanetArtwork({ venture }: { venture: Venture }) {
   </mesh>
 }
 
-function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture; onSelect: (venture: Venture) => void; selectedId?: string; orbitTime: MutableRefObject<number> }) {
+function Planet({ venture, onSelect, selectedId, activeId, orbitTime }: { venture: Venture; onSelect: (venture: Venture) => void; selectedId?: string; activeId?: string; orbitTime: MutableRefObject<number> }) {
   const group = useRef<THREE.Group>(null)
   const mesh = useRef<THREE.Mesh>(null)
   const [hovered, setHovered] = useState(false)
@@ -134,7 +142,7 @@ function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture
         <meshBasicMaterial color="#e2d4f0" transparent opacity={0.5} />
       </mesh>
       <pointLight color={venture.color} intensity={hovered ? 0.8 : 0.22} distance={2.2} />
-      <Html center distanceFactor={11} position={[0, venture.size + 0.3, 0]} style={{ pointerEvents: "none", whiteSpace: "nowrap" }}><span className={`planet-label ${hovered || selected ? "planet-label-active" : ""}`}>{venture.shortTitle}</span></Html>
+      <Html center distanceFactor={11} position={[0, venture.size + 0.3, 0]} style={{ pointerEvents: "none", whiteSpace: "nowrap" }}><span className={`planet-label ${hovered || selected || activeId === venture.id ? "planet-label-active" : ""}`}>{venture.shortTitle}</span></Html>
     </group>
   </>
 }
@@ -175,8 +183,10 @@ function Core({ onReset }: { onReset: () => void }) {
   useFrame(() => { if (core.current) core.current.rotation.y += 0.0016 })
   return <>
     <group ref={core} onClick={onReset}>
-      <mesh><sphereGeometry args={[0.83, 44, 44]} /><meshStandardMaterial color="#f0a5a0" emissive="#e977a1" emissiveIntensity={1.2} metalness={0.25} roughness={0.28} /></mesh>
-      <mesh scale={1.13}><sphereGeometry args={[0.83, 28, 28]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.08} side={THREE.BackSide} /></mesh>
+      <mesh><sphereGeometry args={[0.72, 64, 64]} /><meshStandardMaterial color="#df839d" emissive="#a83276" emissiveIntensity={0.46} metalness={0.48} roughness={0.42} /></mesh>
+      <mesh scale={1.12}><sphereGeometry args={[0.72, 36, 36]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.07} side={THREE.BackSide} /></mesh>
+      <mesh rotation={[Math.PI / 2.5, 0.18, 0.36]}><torusGeometry args={[1.02, 0.022, 8, 96]} /><meshBasicMaterial color="#f4b18e" transparent opacity={0.72} /></mesh>
+      <mesh rotation={[Math.PI / 2.7, -0.28, -0.12]}><torusGeometry args={[1.22, 0.009, 6, 96]} /><meshBasicMaterial color="#9d73e8" transparent opacity={0.56} /></mesh>
       <mesh scale={1.43} raycast={() => {}}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#9d5cff" transparent opacity={0.11} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
       <pointLight color="#e57aa9" intensity={5} distance={8} decay={2} />
     </group>
@@ -203,7 +213,7 @@ function CameraDirector({ selected, tourTarget, manualControl, orbitTime, onManu
       const x = Math.cos(time) * focus.radius
       const z = Math.sin(time) * focus.radius * 0.64
       targetFocus.current.set(x, 0, z)
-      targetPosition.current.set(x + 2.6, 2.25, z + 4.3)
+      targetPosition.current.set(x + (selected ? 2.6 : 5.2), selected ? 2.25 : 4.1, z + (selected ? 4.3 : 8.2))
     }
     if (!manualControl) {
       camera.position.lerp(targetPosition.current, focus ? 0.055 : 0.025)
@@ -219,7 +229,7 @@ function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualCo
   return <Canvas camera={{ position: [0, 7.6, 14], fov: 42 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}>
     <fog attach="fog" args={["#0b0719", 17, 37]} /><ambientLight intensity={0.52} />
     <Stars radius={75} depth={55} count={1900} factor={3} saturation={0.3} fade speed={0.28} /><Core onReset={onReset} /><OrbitClock orbitTime={orbitTime} paused={orbitPaused} />
-    {ventures.map((venture) => <Planet key={venture.id} venture={venture} onSelect={onSelect} selectedId={selected?.id} orbitTime={orbitTime} />)}
+    {ventures.map((venture) => <Planet key={venture.id} venture={venture} onSelect={onSelect} selectedId={selected?.id} activeId={tourTarget?.id} orbitTime={orbitTime} />)}
     <CameraDirector selected={selected} tourTarget={tourTarget} manualControl={manualControl} orbitTime={orbitTime} onManualControl={onManualControl} />
   </Canvas>
 }
@@ -227,6 +237,8 @@ function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualCo
 function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Venture; index: number; onClose: () => void; onModeChange: (mode: ViewMode) => void }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const experience = divisionExperience[venture.id]
+  const artwork = planetArtwork[venture.id]
+  const [cropX, cropY, cropWidth, cropHeight] = artwork.crop
   const featuredProduct = venture.products?.find((product) => product.visible !== false)
   const liveCount = venture.moons.filter((moon) => moon.status === "live").length
   const upcomingCount = venture.moons.filter((moon) => moon.status === "new" || moon.status === "coming-soon").length
@@ -241,6 +253,10 @@ function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Ven
   }
   return <aside className="venture-drawer" aria-labelledby="venture-title">
     <button className="drawer-close" onClick={onClose} aria-label="Return to Galaxy View"><X size={17} /></button>
+    <div className="drawer-world-art" role="img" aria-label={`${venture.title} world artwork`}>
+      <img src={artwork.src} alt="" style={{ width: `${100 / cropWidth}%`, height: `${100 / cropHeight}%`, left: `${(-cropX / cropWidth) * 100}%`, top: `${(-cropY / cropHeight) * 100}%` }} />
+      <span>{String(index + 1).padStart(2, "0")} / 08</span>
+    </div>
     <p className="drawer-kicker"><span style={{ background: venture.color }} /> {venture.category}</p>
     <p className="drawer-number">{String(index + 1).padStart(2, "0")} <span>/ 08</span></p>
     <h2 id="venture-title">{venture.title}</h2><p className="drawer-tagline">{venture.tagline}</p>
@@ -412,7 +428,7 @@ export function GalaxyExperience({ ventures, onModeChange }: { ventures: Venture
   const tourTarget = tourIndex !== null && tourIndex >= 0 ? ventures[tourIndex] ?? null : null
   const tourTitle = tourIndex === -1 ? "The Sun Hub" : tourTarget?.title ?? ""
   const tourDescription = tourIndex === -1 ? "Every division begins at the heart of this universe. From here, follow each orbit into a different kind of dream." : tourTarget ? divisionExperience[tourTarget.id]?.lore ?? tourTarget.story : ""
-  return <main className={`galaxy-shell${sceneFailed ? " galaxy-shell-fallback" : ""}${sceneFailed && selected ? " galaxy-shell-fallback-selected" : ""}${sceneFailed && tourIndex !== null ? " galaxy-shell-fallback-touring" : ""}`}>
+  return <main className={`galaxy-shell${sceneFailed ? " galaxy-shell-fallback" : ""}${sceneFailed && selected ? " galaxy-shell-fallback-selected" : ""}${sceneFailed && tourIndex !== null ? " galaxy-shell-fallback-touring" : ""}${tourIndex !== null ? " galaxy-shell-touring" : ""}`}>
     <div className="universe-ui" inert={welcomeOpen} aria-hidden={welcomeOpen}>
       <div className="nebula nebula-one" /><div className="nebula nebula-two" /><div className="grain" />
       <div className="scene-wrap"><SceneErrorBoundary onError={() => setSceneFailed(true)} fallback={<GalaxyFallback ventures={ventures} onSelect={selectVenture} onStandardMode={() => onModeChange("standard")} />}><Suspense fallback={null}><GalaxyScene ventures={ventures} selected={selected} tourTarget={tourTarget} manualControl={manualControl} onManualControl={handleManualControl} onSelect={selectVenture} onReset={resetView} orbitPaused={orbitPaused} /></Suspense></SceneErrorBoundary></div>
