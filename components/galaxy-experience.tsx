@@ -7,7 +7,7 @@ import Link from "next/link"
 import * as THREE from "three"
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, Compass, Move3D, Pause, Play, Sparkles, Volume2, VolumeX, X } from "lucide-react"
 import type { Venture } from "../data/ecosystem"
-import { ModeSelector, type ViewMode } from "./mode-selector"
+import { ModeSelector, type DisplayTheme, type ViewMode } from "./mode-selector"
 
 function Orbit({ venture, active }: { venture: Venture; active: boolean }) {
   const geometry = useMemo(() => {
@@ -69,8 +69,6 @@ void main() {
   float radius = length((imageUv - 0.5) * 2.0);
   if (radius > 1.0) discard;
   vec3 artwork = texture2D(uMap, imageUv).rgb;
-  float luminance = dot(artwork, vec3(0.2126, 0.7152, 0.0722));
-  float artworkMask = smoothstep(0.018, 0.11, luminance);
   float edgeMask = 1.0 - smoothstep(0.94, 1.0, radius);
   vec3 normal = normalize(vPlanetNormal);
   vec3 lightDirection = normalize(vec3(-0.38, 0.52, 0.78));
@@ -78,7 +76,7 @@ void main() {
   float rim = pow(1.0 - max(normal.z, 0.0), 2.4);
   float specular = pow(max(dot(reflect(-lightDirection, normal), vec3(0.0, 0.0, 1.0)), 0.0), 24.0);
   vec3 color = mix(uTint, artwork, 0.86) * diffuse + uTint * rim * 0.3 + vec3(1.0, 0.82, 0.72) * specular * 0.42;
-  float opacity = artworkMask * edgeMask * 0.96;
+  float opacity = edgeMask;
   gl_FragColor = vec4(color, opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -224,11 +222,11 @@ function CameraDirector({ selected, tourTarget, manualControl, orbitTime, onManu
   return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} minDistance={4} maxDistance={24} maxPolarAngle={Math.PI * 0.83} minPolarAngle={Math.PI * 0.12} onStart={onManualControl} />
 }
 
-function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualControl, onSelect, onReset, orbitPaused }: { ventures: Venture[]; selected: Venture | null; tourTarget: Venture | null; manualControl: boolean; onManualControl: () => void; onSelect: (venture: Venture) => void; onReset: () => void; orbitPaused: boolean }) {
+function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualControl, onSelect, onReset, orbitPaused, theme }: { ventures: Venture[]; selected: Venture | null; tourTarget: Venture | null; manualControl: boolean; onManualControl: () => void; onSelect: (venture: Venture) => void; onReset: () => void; orbitPaused: boolean; theme: DisplayTheme }) {
   const orbitTime = useRef(0)
   return <Canvas camera={{ position: [0, 7.6, 14], fov: 42 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}>
-    <fog attach="fog" args={["#0b0719", 17, 37]} /><ambientLight intensity={0.52} />
-    <Stars radius={75} depth={55} count={1900} factor={3} saturation={0.3} fade speed={0.28} /><Core onReset={onReset} /><OrbitClock orbitTime={orbitTime} paused={orbitPaused} />
+    <fog attach="fog" args={[theme === "day" ? "#d4d6e8" : "#0b0719", 17, 37]} /><ambientLight intensity={theme === "day" ? 0.75 : 0.52} />
+    <Stars radius={75} depth={55} count={1900} factor={theme === "day" ? 1.25 : 3} saturation={theme === "day" ? 0.08 : 0.3} fade speed={0.28} /><Core onReset={onReset} /><OrbitClock orbitTime={orbitTime} paused={orbitPaused} />
     {ventures.map((venture) => <Planet key={venture.id} venture={venture} onSelect={onSelect} selectedId={selected?.id} activeId={tourTarget?.id} orbitTime={orbitTime} />)}
     <CameraDirector selected={selected} tourTarget={tourTarget} manualControl={manualControl} orbitTime={orbitTime} onManualControl={onManualControl} />
   </Canvas>
@@ -343,7 +341,7 @@ function TourGuide({ stop, total, title, description, paused, onTogglePause, onT
   </aside>
 }
 
-export function GalaxyExperience({ ventures, onModeChange }: { ventures: Venture[]; onModeChange: (mode: ViewMode) => void }) {
+export function GalaxyExperience({ ventures, onModeChange, theme, onThemeToggle }: { ventures: Venture[]; onModeChange: (mode: ViewMode) => void; theme: DisplayTheme; onThemeToggle: () => void }) {
   const [selected, setSelected] = useState<Venture | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [sceneFailed, setSceneFailed] = useState(false)
@@ -437,16 +435,16 @@ export function GalaxyExperience({ ventures, onModeChange }: { ventures: Venture
   const tourTarget = tourIndex !== null && tourIndex >= 0 ? ventures[tourIndex] ?? null : null
   const tourTitle = tourIndex === -1 ? "The Sun Hub" : tourTarget?.title ?? ""
   const tourDescription = tourIndex === -1 ? "Every division begins at the heart of this universe. From here, follow each orbit into a different kind of dream." : tourTarget ? divisionExperience[tourTarget.id]?.lore ?? tourTarget.story : ""
-  return <main className={`galaxy-shell${sceneFailed ? " galaxy-shell-fallback" : ""}${sceneFailed && selected ? " galaxy-shell-fallback-selected" : ""}${sceneFailed && tourIndex !== null ? " galaxy-shell-fallback-touring" : ""}${tourIndex !== null ? " galaxy-shell-touring" : ""}`}>
+  return <main className={`galaxy-shell${sceneFailed ? " galaxy-shell-fallback" : ""}${sceneFailed && selected ? " galaxy-shell-fallback-selected" : ""}${sceneFailed && tourIndex !== null ? " galaxy-shell-fallback-touring" : ""}${tourIndex !== null ? " galaxy-shell-touring" : ""}`} data-theme={theme}>
     <div className="universe-ui" inert={welcomeOpen} aria-hidden={welcomeOpen}>
       <div className="nebula nebula-one" /><div className="nebula nebula-two" /><div className="grain" />
-      <div className="scene-wrap"><SceneErrorBoundary onError={() => setSceneFailed(true)} fallback={<GalaxyFallback ventures={ventures} onSelect={selectVenture} onStandardMode={() => onModeChange("standard")} />}><Suspense fallback={null}><GalaxyScene ventures={ventures} selected={selected} tourTarget={tourTarget} manualControl={manualControl} onManualControl={handleManualControl} onSelect={selectVenture} onReset={resetView} orbitPaused={orbitPaused} /></Suspense></SceneErrorBoundary></div>
+      <div className="scene-wrap"><SceneErrorBoundary onError={() => setSceneFailed(true)} fallback={<GalaxyFallback ventures={ventures} onSelect={selectVenture} onStandardMode={() => onModeChange("standard")} />}><Suspense fallback={null}><GalaxyScene ventures={ventures} selected={selected} tourTarget={tourTarget} manualControl={manualControl} onManualControl={handleManualControl} onSelect={selectVenture} onReset={resetView} orbitPaused={orbitPaused} theme={theme} /></Suspense></SceneErrorBoundary></div>
       <header className="hud-header">
         <Link className="brand-mark" href="/" onClick={(event) => { event.preventDefault(); resetView() }} aria-label="Never Forget to Dream home"><span className="brand-symbol"><Sparkles size={18} strokeWidth={1.5} /></span><span className="brand-name">NEVER FORGET<span>TO DREAM INC.</span></span></Link>
         <div className="header-actions"><div className="nav-wrap"><button className="nav-pill" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-haspopup="true"><Compass size={15} /> <span>EXPLORE WORLDS</span><ChevronDown size={14} className={menuOpen ? "chevron-up" : ""} /></button>
         {menuOpen && <div className="quick-menu">{ventures.map((venture) => <button key={venture.id} onClick={() => selectVenture(venture)}><span className="menu-dot" style={{ background: venture.color }} />{venture.shortTitle}<ArrowUpRight size={13} /></button>)}</div>}</div>
         <button className={`sound-toggle${ambientOn ? " sound-toggle-on" : ""}`} onClick={toggleAmbient} aria-label={ambientOn ? "Mute ambient sound" : "Play ambient sound"} aria-pressed={ambientOn} title={ambientOn ? "Mute ambient sound" : "Play ambient sound"}>{ambientOn ? <Volume2 size={15} /> : <VolumeX size={15} />}</button>
-        <div className="mode-switch" aria-label="Site view"><ModeSelector currentMode="galaxy" onModeChange={onModeChange} variant="galaxy" /></div></div>
+        <div className="mode-switch" aria-label="Site view"><ModeSelector currentMode="galaxy" onModeChange={onModeChange} variant="galaxy" theme={theme} onThemeToggle={onThemeToggle} /></div></div>
       </header>
       <div className="hero-copy" aria-hidden={selected ? "true" : undefined}><p className="eyebrow"><span /> A UNIVERSE OF IDEAS</p><h1>Every dream<br />has <em>a world.</em></h1><p className="hero-subtitle">A constellation of things we&apos;re building, making, and dreaming into being.</p><div className="hero-hint"><Move3D size={14} strokeWidth={1.6} /><span>DRAG TO EXPLORE</span><i /> <span>SELECT A WORLD</span></div></div>
       <div className="scene-caption"><span className="caption-line" /> THE NEVER FORGET UNIVERSE <span className="caption-index">01 — 08</span></div>

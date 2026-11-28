@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ChevronDown, Sparkles } from "lucide-react"
+import { ChevronDown, Moon, Sparkles, Sun } from "lucide-react"
 
 export type ViewMode = "galaxy" | "standard" | "kverse"
-type ModeSelectorProps = { currentMode: ViewMode; onModeChange: (mode: ViewMode) => void; variant: "galaxy" | "standard" | "kverse" }
+export type DisplayTheme = "night" | "day"
+type ModeSelectorProps = { currentMode: ViewMode; onModeChange: (mode: ViewMode) => void; variant: "galaxy" | "standard" | "kverse"; theme: DisplayTheme; onThemeToggle: () => void }
 
 const modes: { id: ViewMode; label: string; description: string }[] = [
   { id: "galaxy", label: "Galaxy", description: "Explore the universe" },
@@ -12,7 +13,7 @@ const modes: { id: ViewMode; label: string; description: string }[] = [
   { id: "kverse", label: "K-Verse", description: "Enter the game world" },
 ]
 
-export function ModeSelector({ currentMode, onModeChange, variant }: ModeSelectorProps) {
+export function ModeSelector({ currentMode, onModeChange, variant, theme, onThemeToggle }: ModeSelectorProps) {
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
 
@@ -36,7 +37,7 @@ export function ModeSelector({ currentMode, onModeChange, variant }: ModeSelecto
   const triggerLabel = variant === "standard" ? "Explore in galaxy" : current.label
   const otherModes = modes.filter((mode) => mode.id !== currentMode)
 
-  return <div className={`mode-selector mode-selector-${variant}`} ref={root}>
+  return <div className={`mode-selector mode-selector-${variant}`} data-theme={theme} ref={root}>
     <button className={`mode-selector-trigger ${variant === "standard" || variant === "kverse" ? "mode-pill" : "mode-active"}`} onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-controls="view-mode-options" aria-haspopup="true">
       <span className="mode-spark"><Sparkles size={11} /></span>
       <span>{triggerLabel}</span>
@@ -47,6 +48,14 @@ export function ModeSelector({ currentMode, onModeChange, variant }: ModeSelecto
         <span className={`mode-option-dot mode-option-${mode.id}`} />
         <span><b>{mode.label}</b><small>{mode.description}</small></span>
       </button>)}
+      <div className="appearance-option">
+        <span>APPEARANCE</span>
+        <button type="button" onClick={onThemeToggle} aria-label={`Switch to ${theme === "night" ? "day" : "night"} view`} aria-pressed={theme === "day"}>
+          {theme === "night" ? <Sun size={14} /> : <Moon size={14} />}
+          <span>{theme === "night" ? "Day view" : "Night view"}</span>
+          <small>{theme === "night" ? "LIGHT" : "DARK"}</small>
+        </button>
+      </div>
     </div>}
   </div>
 }
