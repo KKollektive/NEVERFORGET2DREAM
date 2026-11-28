@@ -153,3 +153,14 @@
 @media(max-width:760px){.riffles-book-list{grid-template-columns:1fr}}
 @media(max-width:600px){.riffles-series{padding:15px}.riffles-series-heading{display:block}.riffles-series-heading h3{font-size:34px}.riffles-series-intro{font-size:11px}.riffles-series-note{margin-top:13px;text-align:left}.riffles-book-list{gap:10px}.riffles-book-card{grid-template-columns:minmax(84px,104px) minmax(0,1fr);gap:13px;padding:11px}.riffles-book-copy h4{font-size:19px}.riffles-book-summary{font-size:11px;line-height:1.6}.riffles-book-role{font-size:9px}.book-card{grid-template-columns:112px minmax(0,1fr);gap:14px;padding:14px}.book-cover{min-height:190px;padding:17px 10px}.book-cover-ornament{inset:9px}.book-cover h3{font-size:18px}.book-cover-number,.book-cover-type{font-size:6px}.book-card-copy h3{font-size:19px}.book-card-copy>p:not(.book-card-kicker){font-size:10px;line-height:1.65}.book-card-kicker{font-size:6px}}
 @media(max-width:360px){.riffles-book-card{grid-template-columns:78px minmax(0,1fr);gap:11px;padding:9px}.riffles-book-copy h4{font-size:17px}.riffles-book-summary{font-size:10px}.riffles-book-role{font-size:8px}.riffles-chronology{font-size:9px}.book-card{grid-template-columns:92px minmax(0,1fr);gap:11px;padding:11px}.book-cover{min-height:170px}.book-card-copy h3{font-size:16px}.book-card-copy>p:not(.book-card-kicker){font-size:8px}}
+
+.backoffice-login-page{background:radial-gradient(ellipse at 50% 42%,rgba(199,168,107,.12),transparent 46%),#0c0d0e;color:#efede7}
+.backoffice-brand{color:rgba(239,237,231,.72)}.backoffice-brand>span{border-color:rgba(199,168,107,.28);color:#c7a86b}
+.login-card{border-color:rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(22,24,24,.96),rgba(13,14,15,.98));box-shadow:0 30px 90px rgba(0,0,0,.42)}
+.login-lock{border-color:rgba(199,168,107,.24);color:#c7a86b}
+.login-card h1{color:#efede7}.login-card h1 em{color:#c7a86b}
+.login-copy,.login-card form label{color:rgba(239,237,231,.62)}
+.login-card input{border-color:rgba(255,255,255,.14);background:rgba(8,9,10,.75);color:#efede7}
+.login-card input:focus{border-color:rgba(199,168,107,.68);box-shadow:0 0 0 3px rgba(199,168,107,.12)}
+.login-submit{border-color:rgba(199,168,107,.4);background:linear-gradient(100deg,#c7a86b,#b99657);color:#151411}.login-submit:hover{background:linear-gradient(100deg,#d5b979,#c4a266)}
+.login-return{color:rgba(239,237,231,.52)}.login-return:hover{color:#c7a86b}.login-footer{color:rgba(239,237,231,.32)}
