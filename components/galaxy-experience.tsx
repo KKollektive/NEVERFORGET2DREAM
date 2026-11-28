@@ -7,7 +7,7 @@ import Link from "next/link"
 import * as THREE from "three"
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, Compass, Move3D, Pause, Play, Sparkles, Volume2, VolumeX, X } from "lucide-react"
 import type { Venture } from "../data/ecosystem"
-import { ModeSelector, type ViewMode } from "./mode-selector"
+import { ModeSelector, type DisplayTheme, type ViewMode } from "./mode-selector"
 
 function Orbit({ venture, active }: { venture: Venture; active: boolean }) {
   const geometry = useMemo(() => {
@@ -38,12 +38,12 @@ type DivisionExperience = { featuredLabel: string; featuredTitle: string; featur
 
 const divisionExperience: Record<string, DivisionExperience> = {
   fashion: { featuredLabel: "FEATURED LOOKBOOK", featuredTitle: "Dusk Theory · The Atelier Edit", featuredCopy: "Silk-magenta silhouettes and healing armor made for the life you are becoming.", previewTitle: "KOUT ATELIER™ lookbook", lore: "A world of expressive design, wearable confidence, and new forms of healing armor.", actionLabel: "Explore Lookbook", actionHref: "#fashion" },
-  media: { featuredLabel: "LATEST EPISODE", featuredTitle: "Kristeanna’s Korner", featuredCopy: "A warm, honest journal of the ideas, rituals, and everyday moments that make a life feel like your own.", previewTitle: "Latest episode preview", lore: "A living constellation of video journals, series, reactions, and community-led storytelling.", actionLabel: "Watch Latest Episode", actionHref: "#media" },
+  media: { featuredLabel: "LATEST EPISODE", featuredTitle: "Kristeanna’s Korner", featuredCopy: "A warm, honest journal of the ideas, rituals, and everyday moments that make a life feel like your own.", previewTitle: "Kristeanna’s Korner on YouTube", lore: "A living constellation of video journals, series, reactions, and community-led storytelling.", actionLabel: "Visit Kristeanna’s Korner on YouTube", actionHref: "https://youtube.com/@kristeannaskorner?si=f9MGnYG-pwsAFl4Y" },
   technology: { featuredLabel: "FEATURED PLATFORM", featuredTitle: "AI Rolodex · Creative Tools", featuredCopy: "A considered guide to the tools helping people make room for more human imagination.", previewTitle: "AI Rolodex preview", lore: "Thoughtful technology and creative platforms built to make the next idea easier to reach.", actionLabel: "Explore AI Rolodex", actionHref: "#technology" },
   wellness: { featuredLabel: "FEATURED RITUAL", featuredTitle: "The Siptionary · A Pause in Bloom", featuredCopy: "A small invitation to slow down, find the words for what you feel, and begin again.", previewTitle: "Wellness experience preview", lore: "Tea, reflection, and practical rituals for personal growth and the next becoming.", actionLabel: "Explore Wellness", actionHref: "#wellness" },
   hospitality: { featuredLabel: "FEATURED DROP", featuredTitle: "That’s The Tea · Sunday in Bloom", featuredCopy: "A softly bright botanical ritual for a little everyday renewal, poured with a touch of luxury.", previewTitle: "Tea and lifestyle preview", lore: "Comforting flavors, thoughtful hospitality, and luxurious rituals for everyday dreaming.", actionLabel: "Discover the Tea Menu", actionHref: "#hospitality" },
-  music: { featuredLabel: "FEATURED RELEASE", featuredTitle: "K. Reverie · Playing in the Flowers", featuredCopy: "Original music and visual poetry for the feelings that stay with you after the last note.", previewTitle: "Listen to a track preview", lore: "A velvet-curtain soundscape for original music, choreography, and performance art.", actionLabel: "Listen to Preview", actionHref: "#music" },
-  literature: { featuredLabel: "FEATURED STORY", featuredTitle: "The Writings · HEIRS, Chapter 1", featuredCopy: "Step into the first page of a growing story universe, built to reward every curious reader.", previewTitle: "Read a story preview", lore: "Original novels, poetry, film, and story quests gathered beneath a moonlit citadel.", actionLabel: "Read Chapter 1", actionHref: "#literature" },
+  music: { featuredLabel: "FEATURED RELEASE", featuredTitle: "K. Reverie · Playing in the Flowers", featuredCopy: "Original music and visual poetry for the feelings that stay with you after the last note.", previewTitle: "K. Reverie on YouTube", lore: "A velvet-curtain soundscape for original music, choreography, and performance art.", actionLabel: "Visit K. Reverie on YouTube", actionHref: "https://youtube.com/@k.reverie?si=6KbvH7RzRULgb1Bh" },
+  literature: { featuredLabel: "FEATURED STORY", featuredTitle: "The Veiled Strategist", featuredCopy: "Behind the veil lies a mind more dangerous than any army.", previewTitle: "AI Stories & Motion Books", lore: "Original novels, poetry, film, and story quests gathered beneath a moonlit citadel.", actionLabel: "Explore Stories on YouTube", actionHref: "https://youtube.com/@kristeannakreations?si=_EtqrlcrhN9sO6u_" },
   community: { featuredLabel: "FEATURED INITIATIVE", featuredTitle: "Reverie 1 Nation · The First Gathering", featuredCopy: "Creative confidence, mentorship, and possibility grow stronger when more people can dream together.", previewTitle: "Community impact preview", lore: "A tree-of-life world for mentorship, creative development, and community possibility.", actionLabel: "Explore Community Impact", actionHref: "#community" },
 }
 
@@ -51,8 +51,10 @@ type AmbientSynth = { context: AudioContext; master: GainNode; oscillators: Osci
 
 const artworkVertexShader = `
 varying vec3 vPlanetPosition;
+varying vec3 vPlanetNormal;
 void main() {
   vPlanetPosition = position;
+  vPlanetNormal = normalize(normalMatrix * normal);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`
 const artworkFragmentShader = `
@@ -60,17 +62,21 @@ uniform sampler2D uMap;
 uniform vec3 uTint;
 uniform float uRadius;
 varying vec3 vPlanetPosition;
+varying vec3 vPlanetNormal;
 void main() {
   if (vPlanetPosition.z <= 0.0) discard;
   vec2 imageUv = vPlanetPosition.xy / (uRadius * 2.0) + 0.5;
   float radius = length((imageUv - 0.5) * 2.0);
   if (radius > 1.0) discard;
   vec3 artwork = texture2D(uMap, imageUv).rgb;
-  float luminance = dot(artwork, vec3(0.2126, 0.7152, 0.0722));
-  float artworkMask = smoothstep(0.018, 0.11, luminance);
   float edgeMask = 1.0 - smoothstep(0.94, 1.0, radius);
-  float opacity = artworkMask * edgeMask * 0.84;
-  vec3 color = mix(uTint, artwork, 0.86);
+  vec3 normal = normalize(vPlanetNormal);
+  vec3 lightDirection = normalize(vec3(-0.38, 0.52, 0.78));
+  float diffuse = 0.42 + max(dot(normal, lightDirection), 0.0) * 0.7;
+  float rim = pow(1.0 - max(normal.z, 0.0), 2.4);
+  float specular = pow(max(dot(reflect(-lightDirection, normal), vec3(0.0, 0.0, 1.0)), 0.0), 24.0);
+  vec3 color = mix(uTint, artwork, 0.86) * diffuse + uTint * rim * 0.3 + vec3(1.0, 0.82, 0.72) * specular * 0.42;
+  float opacity = edgeMask;
   gl_FragColor = vec4(color, opacity);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -99,7 +105,7 @@ function PlanetArtwork({ venture }: { venture: Venture }) {
   </mesh>
 }
 
-function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture; onSelect: (venture: Venture) => void; selectedId?: string; orbitTime: MutableRefObject<number> }) {
+function Planet({ venture, onSelect, selectedId, activeId, orbitTime }: { venture: Venture; onSelect: (venture: Venture) => void; selectedId?: string; activeId?: string; orbitTime: MutableRefObject<number> }) {
   const group = useRef<THREE.Group>(null)
   const mesh = useRef<THREE.Mesh>(null)
   const [hovered, setHovered] = useState(false)
@@ -134,7 +140,7 @@ function Planet({ venture, onSelect, selectedId, orbitTime }: { venture: Venture
         <meshBasicMaterial color="#e2d4f0" transparent opacity={0.5} />
       </mesh>
       <pointLight color={venture.color} intensity={hovered ? 0.8 : 0.22} distance={2.2} />
-      <Html center distanceFactor={11} position={[0, venture.size + 0.3, 0]} style={{ pointerEvents: "none", whiteSpace: "nowrap" }}><span className={`planet-label ${hovered || selected ? "planet-label-active" : ""}`}>{venture.shortTitle}</span></Html>
+      <Html center distanceFactor={11} position={[0, venture.size + 0.3, 0]} style={{ pointerEvents: "none", whiteSpace: "nowrap" }}><span className={`planet-label ${hovered || selected || activeId === venture.id ? "planet-label-active" : ""}`}>{venture.shortTitle}</span></Html>
     </group>
   </>
 }
@@ -175,9 +181,11 @@ function Core({ onReset }: { onReset: () => void }) {
   useFrame(() => { if (core.current) core.current.rotation.y += 0.0016 })
   return <>
     <group ref={core} onClick={onReset}>
-      <mesh><sphereGeometry args={[0.83, 44, 44]} /><meshStandardMaterial color="#f0a5a0" emissive="#e977a1" emissiveIntensity={1.2} metalness={0.25} roughness={0.28} /></mesh>
-      <mesh scale={1.13}><sphereGeometry args={[0.83, 28, 28]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.08} side={THREE.BackSide} /></mesh>
-      <mesh scale={1.43} raycast={() => {}}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#9d5cff" transparent opacity={0.11} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
+      <mesh><sphereGeometry args={[0.83, 64, 64]} /><meshStandardMaterial color="#f0a5a0" emissive="#e977a1" emissiveIntensity={1.2} metalness={0.25} roughness={0.28} /></mesh>
+      <mesh scale={1.13}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#f28c68" transparent opacity={0.13} side={THREE.BackSide} /></mesh>
+      <mesh rotation={[Math.PI / 2.5, 0.18, 0.36]}><torusGeometry args={[1.08, 0.026, 8, 96]} /><meshBasicMaterial color="#f4b18e" transparent opacity={0.82} /></mesh>
+      <mesh rotation={[Math.PI / 2.7, -0.28, -0.12]}><torusGeometry args={[1.29, 0.012, 6, 96]} /><meshBasicMaterial color="#9d73e8" transparent opacity={0.68} /></mesh>
+      <mesh scale={1.43} raycast={() => {}}><sphereGeometry args={[0.83, 36, 36]} /><meshBasicMaterial color="#9d5cff" transparent opacity={0.16} side={THREE.BackSide} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
       <pointLight color="#e57aa9" intensity={5} distance={8} decay={2} />
     </group>
     <CoreStar />
@@ -203,7 +211,7 @@ function CameraDirector({ selected, tourTarget, manualControl, orbitTime, onManu
       const x = Math.cos(time) * focus.radius
       const z = Math.sin(time) * focus.radius * 0.64
       targetFocus.current.set(x, 0, z)
-      targetPosition.current.set(x + 2.6, 2.25, z + 4.3)
+      targetPosition.current.set(x + (selected ? 2.6 : 5.2), selected ? 2.25 : 4.1, z + (selected ? 4.3 : 8.2))
     }
     if (!manualControl) {
       camera.position.lerp(targetPosition.current, focus ? 0.055 : 0.025)
@@ -214,12 +222,12 @@ function CameraDirector({ selected, tourTarget, manualControl, orbitTime, onManu
   return <OrbitControls ref={controls} makeDefault enableDamping dampingFactor={0.055} minDistance={4} maxDistance={24} maxPolarAngle={Math.PI * 0.83} minPolarAngle={Math.PI * 0.12} onStart={onManualControl} />
 }
 
-function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualControl, onSelect, onReset, orbitPaused }: { ventures: Venture[]; selected: Venture | null; tourTarget: Venture | null; manualControl: boolean; onManualControl: () => void; onSelect: (venture: Venture) => void; onReset: () => void; orbitPaused: boolean }) {
+function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualControl, onSelect, onReset, orbitPaused, theme }: { ventures: Venture[]; selected: Venture | null; tourTarget: Venture | null; manualControl: boolean; onManualControl: () => void; onSelect: (venture: Venture) => void; onReset: () => void; orbitPaused: boolean; theme: DisplayTheme }) {
   const orbitTime = useRef(0)
   return <Canvas camera={{ position: [0, 7.6, 14], fov: 42 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}>
-    <fog attach="fog" args={["#0b0719", 17, 37]} /><ambientLight intensity={0.52} />
-    <Stars radius={75} depth={55} count={1900} factor={3} saturation={0.3} fade speed={0.28} /><Core onReset={onReset} /><OrbitClock orbitTime={orbitTime} paused={orbitPaused} />
-    {ventures.map((venture) => <Planet key={venture.id} venture={venture} onSelect={onSelect} selectedId={selected?.id} orbitTime={orbitTime} />)}
+    <fog attach="fog" args={[theme === "day" ? "#d4d6e8" : "#0b0719", 17, 37]} /><ambientLight intensity={theme === "day" ? 0.75 : 0.52} />
+    <Stars radius={75} depth={55} count={1900} factor={theme === "day" ? 1.25 : 3} saturation={theme === "day" ? 0.08 : 0.3} fade speed={0.28} /><Core onReset={onReset} /><OrbitClock orbitTime={orbitTime} paused={orbitPaused} />
+    {ventures.map((venture) => <Planet key={venture.id} venture={venture} onSelect={onSelect} selectedId={selected?.id} activeId={tourTarget?.id} orbitTime={orbitTime} />)}
     <CameraDirector selected={selected} tourTarget={tourTarget} manualControl={manualControl} orbitTime={orbitTime} onManualControl={onManualControl} />
   </Canvas>
 }
@@ -227,10 +235,13 @@ function GalaxyScene({ ventures, selected, tourTarget, manualControl, onManualCo
 function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Venture; index: number; onClose: () => void; onModeChange: (mode: ViewMode) => void }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const experience = divisionExperience[venture.id]
+  const artwork = planetArtwork[venture.id]
+  const [cropX, cropY, cropWidth, cropHeight] = artwork.crop
   const featuredProduct = venture.products?.find((product) => product.visible !== false)
   const liveCount = venture.moons.filter((moon) => moon.status === "live").length
   const upcomingCount = venture.moons.filter((moon) => moon.status === "new" || moon.status === "coming-soon").length
   const collectionCount = (venture.albums?.length ?? 0) + (venture.continents?.length ?? 0)
+  const externalAction = experience.actionHref.startsWith("https://")
   const handleInternalLink = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!href.startsWith("#")) return
     event.preventDefault()
@@ -241,6 +252,10 @@ function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Ven
   }
   return <aside className="venture-drawer" aria-labelledby="venture-title">
     <button className="drawer-close" onClick={onClose} aria-label="Return to Galaxy View"><X size={17} /></button>
+    <div className="drawer-world-art" role="img" aria-label={`${venture.title} world artwork`}>
+      <img src={artwork.src} alt="" style={{ width: `${100 / cropWidth}%`, height: `${100 / cropHeight}%`, left: `${(-cropX / cropWidth) * 100}%`, top: `${(-cropY / cropHeight) * 100}%` }} />
+      <span>{String(index + 1).padStart(2, "0")} / 08</span>
+    </div>
     <p className="drawer-kicker"><span style={{ background: venture.color }} /> {venture.category}</p>
     <p className="drawer-number">{String(index + 1).padStart(2, "0")} <span>/ 08</span></p>
     <h2 id="venture-title">{venture.title}</h2><p className="drawer-tagline">{venture.tagline}</p>
@@ -252,19 +267,27 @@ function VentureDrawer({ venture, index, onClose, onModeChange }: { venture: Ven
     </section>
     <section className="drawer-preview" aria-labelledby="preview-heading">
       <div className="drawer-section-heading"><span id="preview-heading">INTERACTIVE PREVIEW</span><span>EMBED READY</span></div>
-      <button className="media-preview" type="button" aria-expanded={previewOpen} onClick={() => setPreviewOpen((open) => !open)}>
-        <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
-        <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>{previewOpen ? "Preview slot ready for the official media embed." : "Tap to open the interactive preview space."}</small></span>
-        <ArrowUpRight size={15} />
-      </button>
+      {externalAction ? (
+        <a className="media-preview" href={experience.actionHref} target="_blank" rel="noopener noreferrer">
+          <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
+          <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>{venture.id === "music" ? "Listen on K. Reverie’s YouTube channel." : venture.id === "literature" ? "Watch AI story previews and motion books on YouTube." : "Watch the latest videos on YouTube."}</small></span>
+          <ArrowUpRight size={15} />
+        </a>
+      ) : (
+        <button className="media-preview" type="button" aria-expanded={previewOpen} onClick={() => setPreviewOpen((open) => !open)}>
+          <span className="media-preview-play"><Play size={15} fill="currentColor" /></span>
+          <span className="media-preview-copy"><b>{experience.previewTitle}</b><small>{previewOpen ? "Preview slot ready for the official media embed." : "Tap to open the interactive preview space."}</small></span>
+          <ArrowUpRight size={15} />
+        </button>
+      )}
     </section>
     <section className="drawer-lore" aria-labelledby="lore-heading">
       <span className="drawer-section-label" id="lore-heading">QUICK STATS / LORE</span>
       <div className="drawer-stats"><div><b>{String(liveCount).padStart(2, "0")}</b><span>Live moons</span></div><div><b>{String(upcomingCount).padStart(2, "0")}</b><span>In orbit</span></div><div><b>{String(collectionCount).padStart(2, "0")}</b><span>Collections</span></div></div>
       <p>{experience.lore}</p>
     </section>
-    <div className="drawer-projects"><span className="drawer-section-label">BRANDS IN THIS WORLD</span>{venture.moons.filter((moon) => moon.status !== "hidden").slice(0, 4).map((moon) => <div key={moon.id}><span><b>{moon.name}</b><small>{moon.status.replace("-", " ")}{moon.continents?.length ? ` · ${moon.continents.map((continent) => continent.title).join(", ")}` : ""}</small></span><ArrowUpRight size={14} /></div>)}</div>
-    <Link className="launch-button" href={experience.actionHref} onClick={(event) => handleInternalLink(event, experience.actionHref)}><span>{experience.actionLabel.toUpperCase()}</span><ArrowUpRight size={16} /></Link>
+    <div className="drawer-projects"><span className="drawer-section-label">BRANDS IN THIS WORLD</span>{venture.moons.filter((moon) => moon.status !== "hidden").slice(0, 4).map((moon) => <div key={moon.id}><span><b>{moon.name}</b><small>{moon.status.replace("-", " ")}{moon.continents?.length ? ` · ${moon.continents.map((continent) => continent.title).join(", ")}` : ""}</small></span><ArrowUpRight size={14} /></div>)}{venture.links?.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer"><span><b>{link.label}</b><small>Open social channel</small></span><ArrowUpRight size={14} /></a>)}</div>
+    <Link className="launch-button" href={experience.actionHref} target={externalAction ? "_blank" : undefined} rel={externalAction ? "noopener noreferrer" : undefined} onClick={(event) => handleInternalLink(event, experience.actionHref)}><span>{experience.actionLabel.toUpperCase()}</span><ArrowUpRight size={16} /></Link>
     <button className="return-button" onClick={onClose}><ArrowDownLeft size={14} /> RETURN TO GALAXY</button>
     <span className="drawer-index">NEVER FORGET TO DREAM INC.</span>
   </aside>
@@ -318,7 +341,7 @@ function TourGuide({ stop, total, title, description, paused, onTogglePause, onT
   </aside>
 }
 
-export function GalaxyExperience({ ventures, onModeChange }: { ventures: Venture[]; onModeChange: (mode: ViewMode) => void }) {
+export function GalaxyExperience({ ventures, onModeChange, theme, onThemeToggle }: { ventures: Venture[]; onModeChange: (mode: ViewMode) => void; theme: DisplayTheme; onThemeToggle: () => void }) {
   const [selected, setSelected] = useState<Venture | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [sceneFailed, setSceneFailed] = useState(false)
@@ -412,16 +435,16 @@ export function GalaxyExperience({ ventures, onModeChange }: { ventures: Venture
   const tourTarget = tourIndex !== null && tourIndex >= 0 ? ventures[tourIndex] ?? null : null
   const tourTitle = tourIndex === -1 ? "The Sun Hub" : tourTarget?.title ?? ""
   const tourDescription = tourIndex === -1 ? "Every division begins at the heart of this universe. From here, follow each orbit into a different kind of dream." : tourTarget ? divisionExperience[tourTarget.id]?.lore ?? tourTarget.story : ""
-  return <main className={`galaxy-shell${sceneFailed ? " galaxy-shell-fallback" : ""}${sceneFailed && selected ? " galaxy-shell-fallback-selected" : ""}${sceneFailed && tourIndex !== null ? " galaxy-shell-fallback-touring" : ""}`}>
+  return <main className={`galaxy-shell${sceneFailed ? " galaxy-shell-fallback" : ""}${sceneFailed && selected ? " galaxy-shell-fallback-selected" : ""}${sceneFailed && tourIndex !== null ? " galaxy-shell-fallback-touring" : ""}${tourIndex !== null ? " galaxy-shell-touring" : ""}`} data-theme={theme}>
     <div className="universe-ui" inert={welcomeOpen} aria-hidden={welcomeOpen}>
       <div className="nebula nebula-one" /><div className="nebula nebula-two" /><div className="grain" />
-      <div className="scene-wrap"><SceneErrorBoundary onError={() => setSceneFailed(true)} fallback={<GalaxyFallback ventures={ventures} onSelect={selectVenture} onStandardMode={() => onModeChange("standard")} />}><Suspense fallback={null}><GalaxyScene ventures={ventures} selected={selected} tourTarget={tourTarget} manualControl={manualControl} onManualControl={handleManualControl} onSelect={selectVenture} onReset={resetView} orbitPaused={orbitPaused} /></Suspense></SceneErrorBoundary></div>
+      <div className="scene-wrap"><SceneErrorBoundary onError={() => setSceneFailed(true)} fallback={<GalaxyFallback ventures={ventures} onSelect={selectVenture} onStandardMode={() => onModeChange("standard")} />}><Suspense fallback={null}><GalaxyScene ventures={ventures} selected={selected} tourTarget={tourTarget} manualControl={manualControl} onManualControl={handleManualControl} onSelect={selectVenture} onReset={resetView} orbitPaused={orbitPaused} theme={theme} /></Suspense></SceneErrorBoundary></div>
       <header className="hud-header">
         <Link className="brand-mark" href="/" onClick={(event) => { event.preventDefault(); resetView() }} aria-label="Never Forget to Dream home"><span className="brand-symbol"><Sparkles size={18} strokeWidth={1.5} /></span><span className="brand-name">NEVER FORGET<span>TO DREAM INC.</span></span></Link>
         <div className="header-actions"><div className="nav-wrap"><button className="nav-pill" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen} aria-haspopup="true"><Compass size={15} /> <span>EXPLORE WORLDS</span><ChevronDown size={14} className={menuOpen ? "chevron-up" : ""} /></button>
         {menuOpen && <div className="quick-menu">{ventures.map((venture) => <button key={venture.id} onClick={() => selectVenture(venture)}><span className="menu-dot" style={{ background: venture.color }} />{venture.shortTitle}<ArrowUpRight size={13} /></button>)}</div>}</div>
         <button className={`sound-toggle${ambientOn ? " sound-toggle-on" : ""}`} onClick={toggleAmbient} aria-label={ambientOn ? "Mute ambient sound" : "Play ambient sound"} aria-pressed={ambientOn} title={ambientOn ? "Mute ambient sound" : "Play ambient sound"}>{ambientOn ? <Volume2 size={15} /> : <VolumeX size={15} />}</button>
-        <div className="mode-switch" aria-label="Site view"><ModeSelector currentMode="galaxy" onModeChange={onModeChange} variant="galaxy" /></div></div>
+        <div className="mode-switch" aria-label="Site view"><ModeSelector currentMode="galaxy" onModeChange={onModeChange} variant="galaxy" theme={theme} onThemeToggle={onThemeToggle} /></div></div>
       </header>
       <div className="hero-copy" aria-hidden={selected ? "true" : undefined}><p className="eyebrow"><span /> A UNIVERSE OF IDEAS</p><h1>Every dream<br />has <em>a world.</em></h1><p className="hero-subtitle">A constellation of things we&apos;re building, making, and dreaming into being.</p><div className="hero-hint"><Move3D size={14} strokeWidth={1.6} /><span>DRAG TO EXPLORE</span><i /> <span>SELECT A WORLD</span></div></div>
       <div className="scene-caption"><span className="caption-line" /> THE NEVER FORGET UNIVERSE <span className="caption-index">01 — 08</span></div>

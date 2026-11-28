@@ -4,7 +4,7 @@ import { signInFounder } from "../../app/back-office/actions"
 export function FounderLogin({ error }: { error?: string }) {
   return (
     <main className="backoffice-login-page">
-      <a className="backoffice-brand" href="/"><span><Sparkles size={17}/></span> NEVER FORGET TO DREAM</a>
+      <a className="backoffice-brand" href="/directory"><span><Sparkles size={17}/></span> GALAXY · PRIVATE ACCESS</a>
       <section className="login-card">
         <div className="login-lock"><LockKeyhole size={18}/></div>
         <p className="standard-kicker"><span/> FOUNDER ACCESS</p>
@@ -13,13 +13,13 @@ export function FounderLogin({ error }: { error?: string }) {
         <form action={signInFounder}>
           <label htmlFor="passcode">FOUNDER PASSCODE</label>
           <input id="passcode" name="passcode" type="password" autoComplete="current-password" required placeholder="Enter your passcode"/>
-          <button className="login-submit" type="submit">ENTER BACK OFFICE <span>↗</span></button>
+          <button className="login-submit" type="submit">ENTER GALAXY <span>↗</span></button>
         </form>
         {error === "invalid" && <p className="login-error" role="alert">That passcode could not be verified. Please try again.</p>}
         {error === "setup" && <p className="login-error" role="alert">Founder access is not configured yet. Add the project&apos;s founder passcode and session secret to continue.</p>}
-        <a className="login-return" href="/">← Return to the ecosystem</a>
+        <a className="login-return" href="/directory">← View public directory</a>
       </section>
-      <span className="login-footer">PRIVATE FOUNDER PORTAL · NEVER FORGET TO DREAM INC.</span>
+      <span className="login-footer">PRIVATE FOUNDER PORTAL · GALAXY</span>
     </main>
   )
 }

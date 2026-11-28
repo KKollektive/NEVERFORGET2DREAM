@@ -3,12 +3,12 @@
 import { useState, type CSSProperties } from "react"
 import { ArrowRight, Compass, Heart, Sparkles, Star, Zap } from "lucide-react"
 import type { Venture } from "../data/ecosystem"
-import { ModeSelector, type ViewMode } from "./mode-selector"
+import { ModeSelector, type DisplayTheme, type ViewMode } from "./mode-selector"
 
-type KVerseExperienceProps = { ventures: Venture[]; onModeChange: (mode: ViewMode) => void }
+type KVerseExperienceProps = { ventures: Venture[]; onModeChange: (mode: ViewMode) => void; theme: DisplayTheme; onThemeToggle: () => void }
 const avatarColors = [{ name: "Rose", color: "#ed8db5" }, { name: "Violet", color: "#a491f4" }, { name: "Solar", color: "#f0bf75" }]
 
-export function KVerseExperience({ ventures, onModeChange }: KVerseExperienceProps) {
+export function KVerseExperience({ ventures, onModeChange, theme, onThemeToggle }: KVerseExperienceProps) {
   const [selectedId, setSelectedId] = useState(ventures[0]?.id ?? "")
   const [avatarColor, setAvatarColor] = useState(avatarColors[0].color)
   const [xp, setXp] = useState(340)
@@ -32,10 +32,10 @@ export function KVerseExperience({ ventures, onModeChange }: KVerseExperiencePro
     setMessage(`Portal opened to ${selected.shortTitle} · +15 XP`)
   }
 
-  return <main className="kverse-shell">
+  return <main className="kverse-shell" data-theme={theme}>
     <header className="kverse-header">
       <a className="brand-mark" href="/" aria-label="Never Forget to Dream home"><span className="brand-symbol"><Sparkles size={17} /></span><span className="brand-name">NEVER FORGET<span>TO DREAM INC.</span></span></a>
-      <div className="kverse-header-right"><span className="kverse-beta"><i /> PLAYER ONE</span><ModeSelector currentMode="kverse" onModeChange={onModeChange} variant="kverse" /></div>
+      <div className="kverse-header-right"><span className="kverse-beta"><i /> PLAYER ONE</span><ModeSelector currentMode="kverse" onModeChange={onModeChange} variant="kverse" theme={theme} onThemeToggle={onThemeToggle} /></div>
     </header>
     <section className="kverse-welcome">
       <div><p className="kverse-kicker"><span /> K-VERSE · YOUR GAME SPACE</p><h1>Make a life<br />between <em>worlds.</em></h1><p>Choose a portal, build your power, and let your story take shape.</p></div>
